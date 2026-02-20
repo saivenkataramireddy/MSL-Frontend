@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: 'https://msl-6i5l.onrender.com',
 });
 
 // Attach token to every request
