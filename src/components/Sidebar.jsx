@@ -3,7 +3,7 @@ import { useAuth, hasRole } from '../context/AuthContext';
 import {
     LayoutDashboard, Users, Stethoscope, Activity,
     BookOpen, Briefcase, Bell, LogOut, Shield, Calendar,
-    AlertCircle,
+    AlertCircle, X,
 } from 'lucide-react';
 
 const allNav = [
@@ -29,7 +29,7 @@ function groupNav(items) {
     return groups;
 }
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }) {
     const { user, logout } = useAuth();
     const isAdmin = hasRole(user, 'Admin');
 
@@ -38,9 +38,14 @@ export default function Sidebar() {
     const initials = user?.full_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
 
     return (
-        <aside className="sidebar">
+        <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
             <div className="sidebar-logo">
-                <h1>🧬 MSL Portal</h1>
+                <div className="sidebar-logo-flex">
+                    <h1>🧬 MSL Portal</h1>
+                    <button className="sidebar-close-btn" onClick={onClose}>
+                        <X size={20} />
+                    </button>
+                </div>
                 <p>Medical Science Liaison</p>
             </div>
 
@@ -53,6 +58,7 @@ export default function Sidebar() {
                                 key={to}
                                 to={to}
                                 id={`nav-${label.toLowerCase().replace(/\s/g, '-')}`}
+                                onClick={onClose}
                                 className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
                             >
                                 <Icon size={16} />
