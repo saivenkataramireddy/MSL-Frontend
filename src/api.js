@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://msl-6i5l.onrender.com',
+  baseURL: 'https://msl-backend-6uej.onrender.com/',
 });
 
 api.interceptors.request.use((config) => {
