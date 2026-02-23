@@ -14,12 +14,27 @@ export default function Doctors() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
 
+    const [msls, setMsls] = useState([]);
+
     useEffect(() => {
         api.get('/doctors/')
             .then(r => setDoctors(r.data))
-            .catch(() => { })
-            .finally(() => setLoading(false));
+            .catch(() => { });
+
+        if (hasRole(user, 'HOD', 'Admin')) {
+            api.get('/users/msls')
+                .then(r => setMsls(r.data))
+                .catch(() => { });
+        }
+        setLoading(false);
     }, []);
+
+    const handleAssign = async (doctorId, mslId) => {
+        try {
+            const { data } = await api.patch(`/doctors/${doctorId}`, { assigned_msl_id: mslId });
+            setDoctors(prev => prev.map(d => d.id === doctorId ? data : d));
+        } catch (_) { }
+    };
 
     const handleCreate = async (e) => {
         e.preventDefault();
@@ -58,7 +73,7 @@ export default function Doctors() {
                         <thead>
                             <tr>
                                 <th>Name</th><th>Specialty</th><th>Hospital</th>
-                                <th>Region</th><th>Therapy Area</th><th>Status</th>
+                                <th>Region</th><th>Therapy Area</th><th>Assigned MSL</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -71,7 +86,21 @@ export default function Doctors() {
                                         <td>{d.hospital}</td>
                                         <td>{d.region}</td>
                                         <td>{d.therapy_area}</td>
-                                        <td><span className="badge badge-green">Active</span></td>
+                                        <td>
+                                            {hasRole(user, 'HOD', 'Admin') ? (
+                                                <select
+                                                    value={d.assigned_msl_id || ''}
+                                                    onChange={(e) => handleAssign(d.id, e.target.value)}
+                                                    className="badge badge-gray"
+                                                    style={{ border: 'none', cursor: 'pointer', background: 'var(--bg-muted)', width: '100%' }}
+                                                >
+                                                    <option value="">Unassigned</option>
+                                                    {msls.map(m => <option key={m.id} value={m.id}>{m.full_name}</option>)}
+                                                </select>
+                                            ) : (
+                                                <span className="badge badge-blue">{d.assigned_msl?.full_name || 'Unassigned'}</span>
+                                            )}
+                                        </td>
                                     </tr>
                                 ))}
                         </tbody>

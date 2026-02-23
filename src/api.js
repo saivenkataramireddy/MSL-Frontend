@@ -1,11 +1,9 @@
-// Central API client — reads the JWT from localStorage and attaches it.
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://msl-6i5l.onrender.com/',
+  baseURL: 'https://msl-6i5l.onrender.com',
 });
 
-// Attach token to every request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('msl_token');
   if (token) {

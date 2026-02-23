@@ -1,13 +1,30 @@
-import { useEffect, useState } from 'react';
+import { Plus, X, BookOpen, Send } from 'lucide-react';
 import api from '../api';
+import { useState, useEffect } from "react";
+import { useAuth } from '../context/AuthContext';
+
 
 export default function Knowledge() {
+    const { user } = useAuth();
+    const isHOD = user?.role?.name === 'HOD';
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
+    const fetchKnowledge = () => {
+        setLoading(true);
         api.get('/knowledge/').then(r => setData(r.data)).catch(() => { }).finally(() => setLoading(false));
+    };
+
+    useEffect(() => {
+        fetchKnowledge();
     }, []);
+
+    const handlePublish = async (id) => {
+        try {
+            await api.patch(`/knowledge/${id}/status?status=Published`);
+            fetchKnowledge();
+        } catch (_) { }
+    };
 
     const statusColor = { Draft: 'badge-yellow', Published: 'badge-green', Archived: 'badge-blue' };
 
@@ -35,8 +52,15 @@ export default function Knowledge() {
                                 <p style={{ fontSize: 13.5, color: 'var(--text-muted)', marginTop: 4, lineHeight: 1.7 }}>
                                     {k.content?.slice(0, 200)}{k.content?.length > 200 ? '…' : ''}
                                 </p>
-                                <div style={{ marginTop: 10, fontSize: 11.5, color: 'var(--text-muted)' }}>
-                                    Category: <strong>{k.category}</strong>
+                                <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
+                                        Category: <strong>{k.category}</strong>
+                                    </div>
+                                    {isHOD && k.status === 'Draft' && (
+                                        <button className="btn btn-sm btn-ghost" onClick={() => handlePublish(k.id)} style={{ color: 'var(--success)', gap: 6 }}>
+                                            <Send size={13} /> Publish
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         ))}

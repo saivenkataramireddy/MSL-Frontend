@@ -31,9 +31,9 @@ function groupNav(items) {
 
 export default function Sidebar({ isOpen, onClose }) {
     const { user, logout } = useAuth();
-    const isAdmin = hasRole(user, 'Admin');
+    const isManagement = hasRole(user, 'Admin') || hasRole(user, 'HOD');
 
-    const visible = allNav.filter(n => !n.adminOnly || isAdmin);
+    const visible = allNav.filter(n => !n.adminOnly || isManagement);
     const groups = groupNav(visible);
     const initials = user?.full_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
 

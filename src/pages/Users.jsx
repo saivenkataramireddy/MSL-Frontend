@@ -33,6 +33,20 @@ export default function Users() {
         }
     };
 
+    const handleToggleStatus = async (user) => {
+        try {
+            const { data } = await api.patch(`/users/${user.id}`, { is_active: !user.is_active });
+            setUsers(prev => prev.map(u => u.id === user.id ? data : u));
+        } catch (_) { }
+    };
+
+    const handleRoleChange = async (userId, roleId) => {
+        try {
+            const { data } = await api.patch(`/users/${userId}`, { role_id: roleId });
+            setUsers(prev => prev.map(u => u.id === userId ? data : u));
+        } catch (_) { }
+    };
+
     if (loading) return <div className="spinner" />;
 
     return (
@@ -40,7 +54,7 @@ export default function Users() {
             <div className="page-header">
                 <div>
                     <div className="page-title">User Management</div>
-                    <div className="page-subtitle">{users.length} accounts · Admin only</div>
+                    <div className="page-subtitle">{users.length} accounts · Management access</div>
                 </div>
                 <button id="btn-add-user" className="btn btn-primary" onClick={() => setShowModal(true)}>
                     <Plus size={15} /> Add User
@@ -50,14 +64,48 @@ export default function Users() {
             <div className="card">
                 <div className="table-wrap">
                     <table>
-                        <thead><tr><th>Name</th><th>Email</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Region</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
                         <tbody>
                             {users.length === 0
-                                ? <tr><td colSpan={2} className="empty-state">No users yet.</td></tr>
+                                ? <tr><td colSpan={6} className="empty-state">No users yet.</td></tr>
                                 : users.map(u => (
                                     <tr key={u.id}>
                                         <td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{u.full_name}</td>
-                                        <td>{u.email}</td>
+                                        <td style={{ fontSize: '13px' }}>{u.email}</td>
+                                        <td>
+                                            <select
+                                                value={u.role?.id || u.role_id}
+                                                onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                                                className="badge badge-gray"
+                                                style={{ border: 'none', cursor: 'pointer', background: 'var(--bg-muted)' }}
+                                            >
+                                                {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                                            </select>
+                                        </td>
+                                        <td style={{ fontSize: '13px' }}>{u.region || '—'}</td>
+                                        <td>
+                                            <span className={`badge ${u.is_active ? 'badge-success' : 'badge-error'}`}>
+                                                {u.is_active ? 'Active' : 'Inactive'}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button
+                                                className={`btn btn-sm ${u.is_active ? 'btn-ghost' : 'btn-primary'}`}
+                                                onClick={() => handleToggleStatus(u)}
+                                                style={{ fontSize: '11px', padding: '4px 8px' }}
+                                            >
+                                                {u.is_active ? 'Deactivate' : 'Activate'}
+                                            </button>
+                                        </td>
                                     </tr>
                                 ))}
                         </tbody>

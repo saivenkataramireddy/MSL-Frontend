@@ -1,5 +1,7 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import api from '../api';
+// context/AuthContext.jsx
+
+import { createContext, useContext, useState, useEffect } from "react";
+import api from "../api";
 
 const AuthContext = createContext(null);
 
@@ -7,42 +9,61 @@ export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // On mount, restore user session from localStorage
-    useEffect(() => {
-        const token = localStorage.getItem('msl_token');
-        const stored = localStorage.getItem('msl_user');
-        if (token && stored) {
-            setUser(JSON.parse(stored));
-        }
-        setLoading(false);
-    }, []);
-
+    // ✅ FIXED LOGIN (Form Data for OAuth2)
     const login = async (email, password) => {
-        const form = new URLSearchParams();
-        form.append('username', email);
-        form.append('password', password);
+        try {
+            const formData = new URLSearchParams();
+            formData.append("username", email);   // IMPORTANT: must be "username"
+            formData.append("password", password);
 
-        const { data } = await api.post('/auth/login', form, {
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        });
+            const response = await api.post("/auth/login", formData, {
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+            });
 
-        localStorage.setItem('msl_token', data.access_token);
+            const token = response.data.access_token;
 
-        // Fetch profile
-        const profile = await api.get('/auth/me', {
-            headers: { Authorization: `Bearer ${data.access_token}` },
-        });
+            localStorage.setItem("msl_token", token);
 
-        localStorage.setItem('msl_user', JSON.stringify(profile.data));
-        setUser(profile.data);
-        return profile.data;
+            // Load current user
+            const me = await api.get("/auth/me");
+            setUser(me.data);
+
+            return true;
+        } catch (err) {
+            const message =
+                err.response?.data?.detail || "Login failed";
+            throw new Error(message);
+        }
     };
 
     const logout = () => {
-        localStorage.removeItem('msl_token');
-        localStorage.removeItem('msl_user');
+        localStorage.removeItem("msl_token");
         setUser(null);
     };
+
+    useEffect(() => {
+        const loadUser = async () => {
+            const token = localStorage.getItem("msl_token");
+
+            if (!token) {
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const res = await api.get("/auth/me");
+                setUser(res.data);
+            } catch {
+                logout();
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadUser();
+    }, []);
 
     return (
         <AuthContext.Provider value={{ user, login, logout, loading }}>
@@ -52,10 +73,17 @@ export function AuthProvider({ children }) {
 }
 
 export function useAuth() {
-    return useContext(AuthContext);
+    const context = useContext(AuthContext);
+
+    if (!context) {
+        throw new Error("useAuth must be used inside AuthProvider");
+    }
+
+    return context;
 }
 
-// Role-based helper
+/* ---------- Role Helper ---------- */
 export function hasRole(user, ...roles) {
-    return roles.includes(user?.role?.name);
+    if (!user?.role?.name) return false;
+    return roles.includes(user.role.name);
 }
